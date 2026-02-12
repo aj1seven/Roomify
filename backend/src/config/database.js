@@ -1,54 +1,18 @@
-const mysql = require("mysql2/promise");
 const { Sequelize } = require("sequelize");
 
-async function ensureDatabaseExists() {
-  // 🚀 Skip DB creation in production (Railway)
-  if (process.env.NODE_ENV === "production") return;
-
-  const host = process.env.DB_HOST || "localhost";
-  const port = Number(process.env.DB_PORT || 3306);
-  const user = process.env.DB_USER || "root";
-  const password = process.env.DB_PASSWORD || "";
-  const dbName = process.env.DB_NAME;
-
-  if (!dbName) {
-    throw new Error("DB_NAME is not set");
+const sequelize = new Sequelize(
+  process.env.DB_NAME,
+  process.env.DB_USER,
+  process.env.DB_PASSWORD,
+  {
+    host: process.env.DB_HOST,
+    port: Number(process.env.DB_PORT || 3306),
+    dialect: "mysql",
+    logging: false,
+    define: {
+      underscored: true,
+    },
   }
+);
 
-  const connection = await mysql.createConnection({
-    host,
-    port,
-    user,
-    password
-  });
-
-  await connection.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\`;`);
-  await connection.end();
-}
-
-let sequelize;
-
-async function getSequelize() {
-  if (sequelize) return sequelize;
-
-  await ensureDatabaseExists();
-
-  const sequelize = new Sequelize(
-    process.env.DB_NAME,
-    process.env.DB_USER,
-    process.env.DB_PASSWORD,
-    {
-      host: process.env.DB_HOST,
-      port: process.env.DB_PORT,
-      dialect: "mysql",
-      logging: false,
-      define: {
-        underscored: true
-      }
-    }
-  );
-
-  return sequelize;
-}
-
-module.exports = { getSequelize };
+module.exports = sequelize;

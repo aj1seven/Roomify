@@ -2,9 +2,13 @@ require("dotenv").config();
 
 const bcrypt = require("bcrypt");
 const app = require("./app");
-const { initModels } = require("./models");
+const {
+  sequelize,
+  User,
+  BookingRule,
+} = require("./models");
 
-async function ensureAdminUser(User) {
+async function ensureAdminUser() {
   const email = process.env.ADMIN_EMAIL;
   const password = process.env.ADMIN_PASSWORD;
   const name = process.env.ADMIN_NAME || "Office Admin";
@@ -15,53 +19,55 @@ async function ensureAdminUser(User) {
   if (existing) return;
 
   const hashed = await bcrypt.hash(password, 10);
+
   await User.create({
     name,
     email,
     password: hashed,
-    role: "ADMIN"
+    role: "ADMIN",
   });
-  // eslint-disable-next-line no-console
+
   console.log(`Seeded admin user: ${email}`);
 }
 
-async function ensureBookingRules(BookingRule) {
+async function ensureBookingRules() {
   const existing = await BookingRule.findByPk(1);
   if (existing) return;
 
-  // Default rules: 9:00–18:00, max 120 minutes, 30-minute slots
   await BookingRule.create({
     id: 1,
     work_start_minute: 9 * 60,
     work_end_minute: 18 * 60,
     max_booking_minutes: 120,
-    slot_minutes: 30
+    slot_minutes: 30,
   });
-  // eslint-disable-next-line no-console
+
   console.log("Seeded default booking rules.");
 }
 
 async function start() {
   const port = Number(process.env.PORT || 5005);
 
-  const { sequelize, User, BookingRule } = await initModels();
+  try {
+    await sequelize.authenticate();
+    console.log("Database connected successfully.");
 
-  await sequelize.authenticate();
-  // Auto-evolve schema in development (adds columns like Booking.attendees, BookingRule table, etc.)
-  await sequelize.sync({ alter: process.env.NODE_ENV !== "production" });
+    // In production we DO NOT use alter
+    await sequelize.sync({
+      alter: process.env.NODE_ENV !== "production",
+    });
 
-  await ensureAdminUser(User);
-  await ensureBookingRules(BookingRule);
+    await ensureAdminUser();
+    await ensureBookingRules();
 
-  app.listen(port, () => {
-    // eslint-disable-next-line no-console
-    console.log(`Backend running on http://localhost:${port}`);
-  });
+    app.listen(port, () => {
+      console.log(`Backend running on port ${port}`);
+    });
+
+  } catch (err) {
+    console.error("Failed to start server:", err);
+    process.exit(1);
+  }
 }
 
-start().catch((err) => {
-  // eslint-disable-next-line no-console
-  console.error("Failed to start server:", err);
-  process.exit(1);
-});
-
+start();
