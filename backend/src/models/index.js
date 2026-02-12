@@ -4,10 +4,10 @@ const { RoomModel } = require("./Room");
 const { BookingModel } = require("./Booking");
 const { BookingRuleModel } = require("./BookingRule");
 
-let models;
+let cachedModels;
 
 async function initModels() {
-  if (models) return models;
+  if (cachedModels) return cachedModels;
 
   const sequelize = await getSequelize();
 
@@ -22,9 +22,15 @@ async function initModels() {
   Room.hasMany(Booking, { foreignKey: "room_id" });
   Booking.belongsTo(Room, { foreignKey: "room_id" });
 
-  models = { sequelize, User, Room, Booking, BookingRule };
+  cachedModels = {
+    sequelize,
+    User,
+    Room,
+    Booking,
+    BookingRule
+  };
 
-  return models;
+  return cachedModels;
 }
 
 module.exports = { initModels };

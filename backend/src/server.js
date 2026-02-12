@@ -2,13 +2,9 @@ require("dotenv").config();
 
 const bcrypt = require("bcrypt");
 const app = require("./app");
-const {
-  sequelize,
-  User,
-  BookingRule,
-} = require("./models");
+const { initModels } = require("./models");
 
-async function ensureAdminUser() {
+async function ensureAdminUser(User) {
   const email = process.env.ADMIN_EMAIL;
   const password = process.env.ADMIN_PASSWORD;
   const name = process.env.ADMIN_NAME || "Office Admin";
@@ -24,13 +20,13 @@ async function ensureAdminUser() {
     name,
     email,
     password: hashed,
-    role: "ADMIN",
+    role: "ADMIN"
   });
 
-  console.log(`Seeded admin user: ${email}`);
+  console.log("Admin seeded");
 }
 
-async function ensureBookingRules() {
+async function ensureBookingRules(BookingRule) {
   const existing = await BookingRule.findByPk(1);
   if (existing) return;
 
@@ -39,35 +35,32 @@ async function ensureBookingRules() {
     work_start_minute: 9 * 60,
     work_end_minute: 18 * 60,
     max_booking_minutes: 120,
-    slot_minutes: 30,
+    slot_minutes: 30
   });
 
-  console.log("Seeded default booking rules.");
+  console.log("Booking rules seeded");
 }
 
 async function start() {
-  const port = Number(process.env.PORT || 5005);
+  const port = process.env.PORT || 5005;
 
-  try {
-    await sequelize.authenticate();
-    console.log("Database connected successfully.");
+  const models = await initModels();
+  const { sequelize, User, BookingRule } = models;
 
-    // In production we DO NOT use alter
-    await sequelize.sync({
-      alter: process.env.NODE_ENV !== "production",
-    });
+  await sequelize.authenticate();
+  console.log("Database connected");
 
-    await ensureAdminUser();
-    await ensureBookingRules();
+  await sequelize.sync();
 
-    app.listen(port, () => {
-      console.log(`Backend running on port ${port}`);
-    });
+  await ensureAdminUser(User);
+  await ensureBookingRules(BookingRule);
 
-  } catch (err) {
-    console.error("Failed to start server:", err);
-    process.exit(1);
-  }
+  app.listen(port, () => {
+    console.log(`Server running on port ${port}`);
+  });
 }
 
-start();
+start().catch((err) => {
+  console.error("Failed to start server:", err);
+  process.exit(1);
+});
