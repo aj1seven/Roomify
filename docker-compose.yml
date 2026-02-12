@@ -1,0 +1,46 @@
+version: "3.9"
+
+services:
+
+  mysql:
+    image: mysql:8
+    container_name: meeting_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: office_meeting_booking_db
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  backend:
+    build:
+      context: ./backend
+    container_name: meeting_backend
+    restart: always
+    depends_on:
+      - mysql
+    environment:
+      PORT: 5005
+      NODE_ENV: development
+      JWT_SECRET: 4i7DzDh/yIvXdtNosYmvMJpmgyc4YjS6tEn27PGfy/s=
+      JWT_EXPIRE: 7d
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: office_meeting_booking_db
+      DB_USER: root
+      DB_PASSWORD: root
+    ports:
+      - "5005:5005"
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: meeting_frontend
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "3005:80"
+
+volumes:
+  mysql_data:
