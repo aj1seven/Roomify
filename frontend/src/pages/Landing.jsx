@@ -11,7 +11,7 @@ export default function Landing() {
         <div className="hero-topline" />
         <div className="hero-inner">
           <div>
-            <div className="kicker">Room</div>
+            <div className="kicker">Roomify</div>
             <h1 className="display">Meeting rooms</h1>
             <div className="subhead">
               Select a room, pick a time slot, and book it—conflict-free, within office rules, with capacity control.
