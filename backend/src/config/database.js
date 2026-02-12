@@ -2,6 +2,9 @@ const mysql = require("mysql2/promise");
 const { Sequelize } = require("sequelize");
 
 async function ensureDatabaseExists() {
+  // 🚀 Skip DB creation in production (Railway)
+  if (process.env.NODE_ENV === "production") return;
+
   const host = process.env.DB_HOST || "localhost";
   const port = Number(process.env.DB_PORT || 3306);
   const user = process.env.DB_USER || "root";
@@ -30,21 +33,20 @@ async function getSequelize() {
 
   await ensureDatabaseExists();
 
-  const host = process.env.DB_HOST || "localhost";
-  const port = Number(process.env.DB_PORT || 3306);
-  const dbName = process.env.DB_NAME;
-  const user = process.env.DB_USER || "root";
-  const password = process.env.DB_PASSWORD || "";
-
-  sequelize = new Sequelize(dbName, user, password, {
-    host,
-    port,
-    dialect: "mysql",
-    logging: false,
-    define: {
-      underscored: true
+  const sequelize = new Sequelize(
+    process.env.DB_NAME,
+    process.env.DB_USER,
+    process.env.DB_PASSWORD,
+    {
+      host: process.env.DB_HOST,
+      port: process.env.DB_PORT,
+      dialect: "mysql",
+      logging: false,
+      define: {
+        underscored: true
+      }
     }
-  });
+  );
 
   return sequelize;
 }
