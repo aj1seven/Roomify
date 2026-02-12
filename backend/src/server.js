@@ -42,18 +42,28 @@ async function ensureBookingRules(BookingRule) {
 }
 
 async function start() {
-  const port = process.env.PORT || 5005;
+  const port = Number(process.env.PORT) || 5005;
 
-  const models = await initModels();
-  const { sequelize, User, BookingRule } = models;
+  const { sequelize, User, BookingRule } = await initModels();
 
   await sequelize.authenticate();
   console.log("Database connected");
 
-  await sequelize.sync();
+  // In production, don't auto-alter tables
+  await sequelize.sync({
+    alter: process.env.NODE_ENV !== "production"
+  });
 
   await ensureAdminUser(User);
   await ensureBookingRules(BookingRule);
+
+  // Health route for Railway root URL
+  app.get("/", (req, res) => {
+    res.json({
+      status: "success",
+      message: "Office Meeting Room Booking Backend is running 🚀"
+    });
+  });
 
   app.listen(port, () => {
     console.log(`Server running on port ${port}`);
